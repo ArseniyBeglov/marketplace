@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,8 +38,28 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'userapp'
+    'userapp',
+    'rest_framework',
+    'rest_framework_simplejwt',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Время жизни access token
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),  # Время жизни для автоматического обновления access token
+    'SLIDING_TOKEN_LIFETIME': timedelta(days=30),  # Время жизни sliding token
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=60),  # Время жизни для автоматического обновления sliding token
+    'ROTATE_REFRESH_TOKENS': False,  # Разрешение автоматического обновления refresh token
+    'ALGORITHM': 'HS256',  # Алгоритм подписи токена
+    'SIGNING_KEY': SECRET_KEY,  # Секретный ключ
+    'VERIFYING_KEY': None,  # Ключ проверки (может быть указан для увеличения безопасности)
+    'AUTH_HEADER_TYPES': ('Bearer',),  # Типы заголовков для аутентификации
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
