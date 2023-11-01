@@ -5,6 +5,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import MyUserSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import authentication_classes, permission_classes
+from rest_framework import viewsets, permissions
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.contrib.auth import get_user_model
+
 
 
 @authentication_classes([])
@@ -25,3 +29,12 @@ class MyUserRegistrationView(APIView):
                 'refresh_token': refresh_token,
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+#viewset для put и get запросов
+class MyUserViewSet(viewsets.ModelViewSet):
+    queryset = get_user_model().objects.all()
+    serializer_class = MyUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    http_method_names = ['get', 'put']
