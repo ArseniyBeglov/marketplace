@@ -18,12 +18,12 @@ class MyUserRegistrationView(APIView):
         serializer = MyUserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            
+
             # Создайте JWT-токен
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
             refresh_token = str(refresh)
-            
+
             return Response({
                 'access_token': access_token,
                 'refresh_token': refresh_token,
@@ -31,10 +31,13 @@ class MyUserRegistrationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-#viewset для put и get запросов
+# viewset для put и get запросов
 class MyUserViewSet(viewsets.ModelViewSet):
     queryset = get_user_model().objects.all()
     serializer_class = MyUserSerializer
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
     http_method_names = ['get', 'put']
+
+
+
