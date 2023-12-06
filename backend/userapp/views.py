@@ -39,5 +39,8 @@ class MyUserViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
     http_method_names = ['get', 'put']
 
-
-
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            # Allow unauthenticated access for GET requests
+            return []
+        return super().get_permissions()
