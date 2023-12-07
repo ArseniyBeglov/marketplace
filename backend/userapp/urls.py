@@ -1,6 +1,6 @@
 from django.urls import path, include
 
-from .views import MyUserRegistrationView, MyUserViewSet
+from .views import MyUserRegistrationView, MyUserViewSet, MyUserEmailConfirmView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework import routers
 
@@ -15,4 +15,5 @@ urlpatterns = [
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('users/', include(router.urls)),
+    path('confirm/<str:uidb64>/<str:token>/', MyUserEmailConfirmView.as_view(), name='confirm_email'),
 ]

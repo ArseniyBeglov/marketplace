@@ -1,3 +1,5 @@
+import datetime
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -8,6 +10,15 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework import viewsets, permissions
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth import get_user_model
+from passlib.hash import sha256_crypt
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.urls import reverse_lazy
+from django.utils.encoding import force_bytes
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 
@@ -18,6 +29,26 @@ class MyUserRegistrationView(APIView):
         serializer = MyUserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+
+            # нужно понять как обращаться к данным из сериальзатора, чтобы сразу засовывать туда хэшированный токен
+            # а то через такой костыль не хорошо работать
+            user = get_user_model().objects.get(email=serializer.data['email'])
+            ts = str(datetime.datetime.now().timestamp())
+            user.confirm_token = sha256_crypt.hash(ts)
+            user.save()
+
+            # и тут скорее всего лучше через id а не email
+            uemail = urlsafe_base64_encode(force_bytes(user.email))
+            activation_url = reverse_lazy('confirm_email', kwargs={'uidb64': uemail, 'token': ts})
+            current_site = str(request.get_host())
+
+            send_mail(
+                'Confirm email',
+                f'http://{current_site}{activation_url}',
+                os.environ.get('EMAIL_HOST_USER'),
+                [str(serializer.data['email'])],
+                fail_silently=False,
+            )
 
             # Создайте JWT-токен
             refresh = RefreshToken.for_user(user)
@@ -44,3 +75,21 @@ class MyUserViewSet(viewsets.ModelViewSet):
             # Allow unauthenticated access for GET requests
             return []
         return super().get_permissions()
+
+
+@authentication_classes([])
+@permission_classes([AllowAny])
+class MyUserEmailConfirmView(APIView):
+    def get(self, request, uemail64, token):
+        try:
+            uemail = urlsafe_base64_decode(uemail64)
+            user = get_user_model().objects.filter(email=uemail).first()
+        except (TypeError, ValueError, OverflowError):
+            user = None
+
+        if user is not None and sha256_crypt.verify(token, user.confirm_token):
+            user.is_confirmed = True
+            user.save()
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
