@@ -21,6 +21,7 @@ import os
 load_dotenv()
 
 
+
 @authentication_classes([])
 @permission_classes([AllowAny])
 class MyUserRegistrationView(APIView):
@@ -36,11 +37,11 @@ class MyUserRegistrationView(APIView):
             user.confirm_token = sha256_crypt.hash(ts)
             user.save()
 
-
             # и тут скорее всего лучше через id а не email
-            uemail = urlsafe_base64_encode(str(user.email).encode('utf-8'))
-            activation_url = reverse_lazy('confirm_email', kwargs={'uemail64': uemail, 'token': ts})
+            uemail = urlsafe_base64_encode(force_bytes(user.email))
+            activation_url = reverse_lazy('confirm_email', kwargs={'uidb64': uemail, 'token': ts})
             current_site = str(request.get_host())
+
             send_mail(
                 'Confirm email',
                 f'http://{current_site}{activation_url}',
@@ -81,15 +82,14 @@ class MyUserViewSet(viewsets.ModelViewSet):
 class MyUserEmailConfirmView(APIView):
     def get(self, request, uemail64, token):
         try:
-            uemail = urlsafe_base64_decode(uemail64).decode()
+            uemail = urlsafe_base64_decode(uemail64)
             user = get_user_model().objects.filter(email=uemail).first()
         except (TypeError, ValueError, OverflowError):
             user = None
+
         if user is not None and sha256_crypt.verify(token, user.confirm_token):
             user.is_confirmed = True
             user.save()
             return Response(status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-
